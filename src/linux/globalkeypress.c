@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <unistd.h>  // daemon, close
 #include <linux/input.h>
+#include <time.h>
 
 #include "key_util.h"
 #include "util.h"
@@ -58,7 +59,7 @@ static char *getKeyboardDeviceFileName() {
    }
 
    char result[20] = "/dev/input/";
-   char temp[9];
+   char temp[9] = "";
    fgets(temp, 9, pipe);
 
    pclose(pipe);
@@ -68,20 +69,13 @@ static char *getKeyboardDeviceFileName() {
 int main(int argc, char **argv) {
    rootCheck();
 
+   // Don't buffer output.
+   setbuf(stdout, NULL);
+
    char *deviceFile = getKeyboardDeviceFileName();
+   printf("listening to: %s\n", deviceFile);
    int kbd_fd = openKeyboardDeviceFile(deviceFile);
    assert(kbd_fd > 0);
-
-   char *logFile = "/var/log/globalkeypress.log";
-
-   FILE *logfile = fopen(logFile, "a");
-   if (logfile == NULL) {
-     LOG_ERROR("Could not open log file");
-     exit(-1);
-   }
-
-   // We want to write to the file on every keypress, so disable buffering
-   setbuf(logfile, NULL);
 
    uint8_t shift_pressed = 0;
    input_event event;
@@ -93,10 +87,7 @@ int main(int argc, char **argv) {
             }
             char *name = getKeyText(event.code, shift_pressed);
             if (strcmp(name, UNKNOWN_KEY) != 0) {
-              //LOG("%s", name);
-              fputs("pressed ", logfile);
-              fputs(name, logfile);
-              fputs("\n", logfile);
+              printf("pressed %s\n", name);
             }
          } else if (event.value == KEY_RELEASE) {
             if (isShift(event.code)) {
@@ -104,10 +95,7 @@ int main(int argc, char **argv) {
             }
             char *name = getKeyText(event.code, shift_pressed);
             if (strcmp(name, UNKNOWN_KEY) != 0) {
-              //LOG("%s", name);
-              fputs("released ", logfile);
-              fputs(name, logfile);
-              fputs("\n", logfile);
+              printf("released %s\n", name);
             }
          }
       }
@@ -115,6 +103,5 @@ int main(int argc, char **argv) {
    }
 
    close(kbd_fd);
-   fclose(logfile);
    return 0;
 }
