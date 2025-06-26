@@ -19,6 +19,8 @@ released <KEY>
 It can be used to pipe keypress info into another program, which can capture
 whatever keys it is interested in.
 
+This approach avoids writing key presses to a logfile, which has worse security
+properties.
 
 ## Install
 
